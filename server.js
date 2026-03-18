@@ -9,6 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/personsDB';
 const API_TOKEN = process.env.API_TOKEN;
+const KEEPALIVE_TOKEN = process.env.KEEPALIVE_TOKEN;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 // 中介軟體
@@ -38,6 +39,19 @@ function verifyApiToken(req, res, next) {
 
   if (!providedToken || String(providedToken) !== String(API_TOKEN)) {
     return res.status(401).json({ message: 'API token 驗證失敗' });
+  }
+
+  next();
+}
+
+function verifyKeepAliveToken(req, res, next) {
+  if (!KEEPALIVE_TOKEN) {
+    return res.status(500).json({ message: '伺服器未設定 KEEPALIVE_TOKEN' });
+  }
+
+  const headerToken = req.headers['x-keepalive-token'];
+  if (!headerToken || String(headerToken) !== String(KEEPALIVE_TOKEN)) {
+    return res.status(401).json({ message: 'keep-alive token 驗證失敗' });
   }
 
   next();
@@ -79,6 +93,16 @@ mongoose.connection.on('connected', () => {
   
   mongoose.connection.on('error', (err) => {
     console.error('❌ MongoDB 連線錯誤:', err);
+  });
+
+  // 公開健康檢查: 不回傳敏感資訊
+  /*app.get('/healthz', (req, res) => {
+    res.status(204).send();
+  });*/
+
+  // 保活端點: 只回應 204，不觸發資料庫查詢
+  app.get('/keepalive', verifyKeepAliveToken, (req, res) => {
+    res.status(204).send();
   });
 
 // 查詢個人資料
