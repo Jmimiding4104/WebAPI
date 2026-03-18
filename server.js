@@ -30,6 +30,29 @@ function verifyApiToken(req, res, next) {
   next();
 }
 
+function toRocBirthCompact(value) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) {
+    return trimmed;
+  }
+
+  const westernYear = Number(match[1]);
+  if (!Number.isInteger(westernYear) || westernYear <= 1911) {
+    return trimmed;
+  }
+
+  const rocYear = String(westernYear - 1911);
+  const month = match[2];
+  const day = match[3];
+  return `${rocYear}${month}${day}`;
+}
+
 // 連接 MongoDB
 mongoose.connect(MONGODB_URI, {
   dbName: 'personsDB',
@@ -61,13 +84,14 @@ app.post('/person', async (req, res) => {
   const {
     idNumber, name, birth, education, phone, address
   } = req.body;
+  const normalizedBirth = toRocBirthCompact(birth);
 
   let person = await WebPerson.findOne({ idNumber });
 
   if (person) {
     // 更新
     person.name = name;
-    person.birth = birth;
+    person.birth = normalizedBirth;
     person.education = education;
     person.phone = phone;
     person.address = address;
@@ -76,7 +100,7 @@ app.post('/person', async (req, res) => {
   } else {
     // 新增
     person = new WebPerson({
-      idNumber, name, birth, education, phone, address
+      idNumber, name, birth: normalizedBirth, education, phone, address
     });
     await person.save();
     res.json({ message: '新增成功' });
