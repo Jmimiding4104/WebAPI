@@ -2,17 +2,29 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const WebPerson = require('./WebPerson');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/personsDB';
 const API_TOKEN = process.env.API_TOKEN;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 // 中介軟體
 app.use(bodyParser.json());
+app.use(cors({
+  origin: CORS_ORIGIN,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Token']
+}));
+app.options('*', cors());
 
 function verifyApiToken(req, res, next) {
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   if (!API_TOKEN) {
     return res.status(500).json({ message: '伺服器未設定 API_TOKEN' });
   }
