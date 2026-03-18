@@ -108,6 +108,7 @@ mongoose.connection.on('connected', () => {
   // 保活端點: 只回應 204，不觸發資料庫查詢
   app.get('/keepalive', verifyKeepAliveToken, (req, res) => {
     res.status(204).send();
+    console.log(123)
   });
 
 // 查詢個人資料
