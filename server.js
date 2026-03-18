@@ -18,7 +18,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Token']
 }));
-app.options('*', cors());
+// Express 5 uses path-to-regexp v8; regex avoids wildcard parsing errors.
+app.options(/.*/, cors());
 
 function verifyApiToken(req, res, next) {
   if (req.method === 'OPTIONS') {
