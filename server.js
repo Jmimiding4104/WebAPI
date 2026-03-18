@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 app.use(cors({
   origin: CORS_ORIGIN,
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Token', 'X-Keepalive-Token']
 }));
 // Express 5 uses path-to-regexp v8; regex avoids wildcard parsing errors.
 app.options(/.*/, cors());
@@ -49,8 +49,13 @@ function verifyKeepAliveToken(req, res, next) {
     return res.status(500).json({ message: '伺服器未設定 KEEPALIVE_TOKEN' });
   }
 
+  const bearerToken = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7)
+    : null;
   const headerToken = req.headers['x-keepalive-token'];
-  if (!headerToken || String(headerToken) !== String(KEEPALIVE_TOKEN)) {
+  const providedToken = bearerToken || headerToken;
+
+  if (!providedToken || String(providedToken) !== String(KEEPALIVE_TOKEN)) {
     return res.status(401).json({ message: 'keep-alive token 驗證失敗' });
   }
 
